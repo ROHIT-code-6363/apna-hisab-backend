@@ -1,125 +1,129 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/products-models');
+const Products = require('../models/productModule');
+const upload = require("../middleware/multer");
+const cloudinary = require("../middleware/cloudinary");
 
-router.post('/auth', async (req, res) => {
+router.post("/auth/add-product", upload.single("image"), async (req, res) => {
   try {
-    const { productName, category, Title1, Title2, Title3, Title4, Title5, Title6, Title7, Title8, Title9,
-      Price1, Price2, Price3, Price4, Price5, Price6, Price7, Price8, Price9, productIdEdit,
-      UPrice1, UPrice2, UPrice3, UPrice4, UPrice5, UPrice6, UPrice7, UPrice8, UPrice9
-    } = req.body;
+    const { name, category, variants } = req.body;
     
-    console.log('Received product data:', req.body);
-    if (!productIdEdit) {
-      const ProductExist = await Product.findOne({ ProductName: productName, Category: category });
-      if (ProductExist) {
-        return res.status(400).json({ message: 'Product already exists' });
-      }
-    }
-    
-    if (productIdEdit) {
-      const ProductUpdate = await Product.findOneAndUpdate(
-        { _id: productIdEdit },
-        {
-          $set: {
-            ProductName: productName,
-            Category: category,
-            Title1,
-            Title2,
-            Title3,
-            Title4,
-            Title5,
-            Title6,
-            Title7,
-            Title8,
-            Title9,
-            Price1,
-            Price2,
-            Price3,
-            Price4,
-            Price5,
-            Price6,
-            Price7,
-            Price8,
-            Price9,
-            UPrice1,
-            UPrice2,
-            UPrice3,
-            UPrice4,
-            UPrice5,
-            UPrice6,
-            UPrice7,
-            UPrice8,
-            UPrice9
-          }
-        },
-        { new: true, runValidators: true }
-      );
-      
-      if (!ProductUpdate) {
-        return res.status(400).json({ message: 'Product to update not found' });
-      } else {
-        return res.status(200).json({ message: 'Product updated successfully' });
-      }
-      
-    } else {
+    let imageUrl = req.body.image || ""; 
 
-      await Product.create({
-        ProductName: productName,
-        Category: category,
-        Title1,
-        Title2,
-        Title3,
-        Title4,
-        Title5,
-        Title6,
-        Title7,
-        Title8,
-        Title9,
-        Price1,
-        Price2,
-        Price3,
-        Price4,
-        Price5,
-        Price6,
-        Price7,
-        Price8,
-        Price9,
-        UPrice1,
-        UPrice2,
-        UPrice3,
-        UPrice4,
-        UPrice5,
-        UPrice6,
-        UPrice7,
-        UPrice8,
-        UPrice9
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: "products" 
       });
-
-      res.status(201).json({ message: 'Product created successfully' });
+      imageUrl = uploadResult.secure_url; 
     }
+
+    // ---  Product Save  ---
+    const newProduct = new Products({
+      image: imageUrl, 
+      name: name,
+      category: category,
+      variants: typeof variants === 'string' ? JSON.parse(variants) : variants,
+    });
+
+    await newProduct.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product saved successfully!",
+      product: newProduct
+    });
 
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.log("Error:", error);
+    res.status(500).json({ success: false, message: "Error saving product", error });
   }
 });
 
-router.get('/auth/products', async (req, res) => {
+router.get('/auth/getProducts', async (req, res) => {
   try {
-    console.log('Fetching products', req.body);
-    const products = await Product.find();
-    res.status(200).json(products);
+    const product = await Products.find();
+    res.status(200).json({
+      success: true,
+      count: product.length,
+      data: product
+    });
   } catch (error) {
     console.log('Fetching products error:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.delete('/auth/products/:id', async (req, res) => {
+// --- UPDATE PRODUCT ---
+router.put('/auth/update-product/:id', upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
-    await Product.findByIdAndDelete(id);
-    res.status(204).send();
+    
+    const { name, category, variants } = req.body;
+
+    let imageUrl = req.body.image || ""; 
+
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "products"
+      });
+      imageUrl = uploadResult.secure_url;
+    }
+
+    // --- Variants ---
+    let parsedVariants = variants;
+    if (typeof variants === 'string') {
+        try {
+            parsedVariants = JSON.parse(variants);
+        } catch (e) {
+            parsedVariants = [];
+        }
+    }
+
+    // --- Update Object ---
+    const updateData = {
+      name: name,
+      category: category,
+      variants: parsedVariants,
+      image: imageUrl, 
+    };
+
+    // --- Database Update ---
+    const updatedProduct = await Products.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Product Updated Successfully",
+      product: updatedProduct
+    });
+
+  } catch (error) {
+    console.error("Update Error:", error);
+    res.status(500).json({ success: false, message: "Server Error", error: error.message });
+  }
+});
+
+router.delete('/auth/DeleteProduct/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const DeleteProduct = await Products.findByIdAndDelete(id);
+
+    if (!DeleteProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({ 
+        success: true,
+        message: "Deleted successfully" 
+    });
+
   } catch (error) {
     console.log('Deleting product error:', error.message);
     res.status(500).json({ message: 'Server error' });
