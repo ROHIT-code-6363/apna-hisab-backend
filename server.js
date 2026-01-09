@@ -13,7 +13,7 @@ app.use("/api", authRouter);
 app.use("/api/auth", khataRouter);
 
 // Apna Render wala URL yahan likhein
-const serverUrl = "https://apna-hisab.onrender.com/api/auth/add-product"; 
+const serverUrl = "https://apna-hisab.onrender.com/api/auth/getProducts"; 
 
 // setInterval use karein taaki ye har 14 minute mein repeat ho
 setInterval(() => {
