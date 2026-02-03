@@ -25,16 +25,6 @@ setInterval(() => {
 
 const Port = process.env.PORT || 5000;
 
-// Apna Render wala URL yahan likhein
-const serverUrl = "https://apna-hisab.onrender.com/api/auth/getProducts"; 
-
-// setInterval use karein taaki ye har 14 minute mein repeat ho
-setInterval(() => {
-    https.get(serverUrl, (res) => {
-        console.log("Ping successful to keep server awake!");
-    });
-}, 10 * 60 * 1000); // 10 Minutes
-
 connectDB().then(() => {
   app.listen(Port, () => {
     console.log(`Server is running on port ${Port}`);
