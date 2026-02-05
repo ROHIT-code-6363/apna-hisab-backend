@@ -327,6 +327,7 @@ router.get('/get-all-bills/:id', async (req, res) => {
             city: user.city,
             grandTotal: user.grandTotal,
             isMultiBill: user.isMultiBill,
+            maxActiveBill: user.maxActiveBill,
             bills: user.bills
         });
 
