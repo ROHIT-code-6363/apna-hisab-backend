@@ -445,11 +445,11 @@ router.put('/update-transaction/:id', async (req, res) => {
         const netNewTotal = newAmountVal - newDiscountVal;
 
         if (targetTrans.type === 'Bill') {
-            targetBill.grandTotal += netNewTotal;     // Naya bill amount jodo
-            if (user.totalAmount !== undefined) user.totalAmount += netNewTotal;
+            targetBill.totalAmount += netNewTotal;
+            if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
-            targetBill.grandTotal -= netNewTotal;     // Nayi payment minus karo
-            if (user.totalAmount !== undefined) user.totalAmount -= netNewTotal;
+            targetBill.totalAmount -= netNewTotal;
+            if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }
 
         await user.save();
@@ -457,7 +457,7 @@ router.put('/update-transaction/:id', async (req, res) => {
         res.status(200).json({
             message: "Updated successfully",
             updatedBillTotal: targetBill.totalAmount,
-            updatedGlobalBalance: user.totalAmount
+            updatedGlobalBalance: user.grandTotal
         });
 
     } catch (error) {
