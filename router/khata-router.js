@@ -422,7 +422,6 @@ router.put('/update-transaction/:id', async (req, res) => {
         // A. Purana Asar Hatao (Revert Old Values)
         const oldAmountVal = Number(targetTrans.amount);
         const oldDiscountVal = Number(targetTrans.discount) || 0;
-        const netOldTotal = oldAmountVal - oldDiscountVal;
 
         if (targetTrans.type === 'Bill') {
             const netOldTotal = oldAmountVal - oldDiscountVal;
@@ -446,8 +445,7 @@ router.put('/update-transaction/:id', async (req, res) => {
         // C. Naya Asar Dalo (Apply New Values)
         const newAmountVal = Number(amount);
         const newDiscountVal = Number(discount) || 0;
-        const netNewTotal = newAmountVal - newDiscountVal;
-
+        
         if (targetTrans.type === 'Bill') {
             const netNewTotal = newAmountVal - newDiscountVal;
 
