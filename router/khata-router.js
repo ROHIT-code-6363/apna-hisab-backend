@@ -425,9 +425,13 @@ router.put('/update-transaction/:id', async (req, res) => {
         const netOldTotal = oldAmountVal - oldDiscountVal;
 
         if (targetTrans.type === 'Bill') {
+            const netOldTotal = oldAmountVal - oldDiscountVal;
+
             targetBill.totalAmount -= netOldTotal;     // Bill total kam karo
             if (user.grandTotal !== undefined) user.grandTotal -= netOldTotal; // User total kam karo
         } else if (targetTrans.type === 'Pay') {
+            const netOldTotal = oldAmountVal + oldDiscountVal;
+
             targetBill.totalAmount += netOldTotal;     // Payment thi, wapas add karo (udhar badha)
             if (user.grandTotal !== undefined) user.grandTotal += netOldTotal;
         };
@@ -445,9 +449,13 @@ router.put('/update-transaction/:id', async (req, res) => {
         const netNewTotal = newAmountVal - newDiscountVal;
 
         if (targetTrans.type === 'Bill') {
+            const netNewTotal = newAmountVal - newDiscountVal;
+
             targetBill.totalAmount += netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
+            const netNewTotal = newAmountVal + newDiscountVal;
+
             targetBill.totalAmount -= netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }
