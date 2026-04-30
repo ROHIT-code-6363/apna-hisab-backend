@@ -447,19 +447,16 @@ router.put('/update-transaction/:id', async (req, res) => {
         const newDiscountVal = Number(discount) || 0;
         
         if (targetTrans.type === 'Bill') {
-<<<<<<< HEAD
             targetBill.totalAmount += netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
-=======
             const netNewTotal = newAmountVal - newDiscountVal;
 
             targetBill.totalAmount += netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
             const netNewTotal = newAmountVal + newDiscountVal;
-
->>>>>>> e0cd213f2133de395f2597ea62f24528d89ce2e1
+ e0cd213f2133de395f2597ea62f24528d89ce2e1
             targetBill.totalAmount -= netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }
