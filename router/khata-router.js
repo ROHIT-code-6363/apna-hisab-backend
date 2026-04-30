@@ -30,6 +30,17 @@ router.post('/AddKhataUser', async (req, res) => {
     }
 });
 
+{/* USER GET */ }
+router.get('/getKhataUser', async (req, res) => {
+    try {
+        const KhataUsers = await KhataUser.find();
+        res.status(200).json(KhataUsers);
+    } catch (error) {
+        console.log('Fetching KhataUser error:', error.message);
+        res.status(500).json({ message: 'Server error' });
+    }
+})
+
 {/* ---UPDATE KHATAUSER--- */ }
 router.put('/AddKhataUser/:id', async (req, res) => {
     try {
@@ -116,17 +127,6 @@ router.get('/User-Profile/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-
-{/* USER GET */ }
-router.get('/getKhataUser', async (req, res) => {
-    try {
-        const KhataUsers = await KhataUser.find();
-        res.status(200).json(KhataUsers);
-    } catch (error) {
-        console.log('Fetching KhataUser error:', error.message);
-        res.status(500).json({ message: 'Server error' });
-    }
-})
 
 {/* ADDING USER PAYMENTS */ }
 router.post('/add-transaction/:userid', async (req, res) => {
@@ -327,6 +327,7 @@ router.get('/get-all-bills/:id', async (req, res) => {
             city: user.city,
             grandTotal: user.grandTotal,
             isMultiBill: user.isMultiBill,
+            maxActiveBill: user.maxActiveBill,
             bills: user.bills
         });
 
@@ -444,11 +445,11 @@ router.put('/update-transaction/:id', async (req, res) => {
         const netNewTotal = newAmountVal - newDiscountVal;
 
         if (targetTrans.type === 'Bill') {
-            targetBill.grandTotal += netNewTotal;     // Naya bill amount jodo
-            if (user.totalAmount !== undefined) user.totalAmount += netNewTotal;
+            targetBill.totalAmount += netNewTotal;
+            if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
-            targetBill.grandTotal -= netNewTotal;     // Nayi payment minus karo
-            if (user.totalAmount !== undefined) user.totalAmount -= netNewTotal;
+            targetBill.totalAmount -= netNewTotal;
+            if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }
 
         await user.save();
@@ -456,7 +457,7 @@ router.put('/update-transaction/:id', async (req, res) => {
         res.status(200).json({
             message: "Updated successfully",
             updatedBillTotal: targetBill.totalAmount,
-            updatedGlobalBalance: user.totalAmount
+            updatedGlobalBalance: user.grandTotal
         });
 
     } catch (error) {

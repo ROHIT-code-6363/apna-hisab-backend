@@ -6,7 +6,7 @@ const cloudinary = require("../middleware/cloudinary");
 
 router.post("/auth/add-product", upload.single("image"), async (req, res) => {
   try {
-    const { name, category, variants } = req.body;
+    const { name, category, variants, packOf } = req.body;
     
     let imageUrl = req.body.image || ""; 
 
@@ -22,6 +22,7 @@ router.post("/auth/add-product", upload.single("image"), async (req, res) => {
       image: imageUrl, 
       name: name,
       category: category,
+      packOf: packOf || '1',
       variants: typeof variants === 'string' ? JSON.parse(variants) : variants,
     });
 
@@ -58,7 +59,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
   try {
     const { id } = req.params;
     
-    const { name, category, variants } = req.body;
+    const { name, category, variants, packOf } = req.body;
 
     let imageUrl = req.body.image || ""; 
 
@@ -83,6 +84,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
     const updateData = {
       name: name,
       category: category,
+      packOf: packOf || '1',
       variants: parsedVariants,
       image: imageUrl, 
     };

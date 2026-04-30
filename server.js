@@ -4,6 +4,7 @@ const cors = require("cors");
 const app = express();
 const authRouter = require("./router/auth-router");
 const khataRouter = require("./router/khata-router");
+const BillRouter = require("./router/bills-router");
 const connectDB = require("./utils/db");
 const https = require('https');
 
@@ -12,6 +13,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use("/api", authRouter);
 app.use("/api/auth", khataRouter);
+app.use("/api/auth", BillRouter);
 
 // Apna Render wala URL yahan likhein
 const serverUrl = "https://apna-hisab.onrender.com/api/auth/getProducts"; 
@@ -24,16 +26,6 @@ setInterval(() => {
 }, 10 * 60 * 1000); // 10 Minutes
 
 const Port = process.env.PORT || 5000;
-
-// Apna Render wala URL yahan likhein
-const serverUrl = "https://apna-hisab.onrender.com/api/auth/getProducts"; 
-
-// setInterval use karein taaki ye har 14 minute mein repeat ho
-setInterval(() => {
-    https.get(serverUrl, (res) => {
-        console.log("Ping successful to keep server awake!");
-    });
-}, 10 * 60 * 1000); // 10 Minutes
 
 connectDB().then(() => {
   app.listen(Port, () => {

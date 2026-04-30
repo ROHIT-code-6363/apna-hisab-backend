@@ -7,12 +7,18 @@ const ProductSchema = new mongoose.Schema({
     
     name: { 
         type: String, 
-        required: true 
+        required: true,
+        unique: true
     }, 
     
     category: { 
         type: String, 
         required: true 
+    }, 
+
+    packOf: { 
+        type: Number, 
+        default: 1
     }, 
     
     variants: [{ 
@@ -20,14 +26,22 @@ const ProductSchema = new mongoose.Schema({
             type: String,
             required: true 
         },
-        cash: { 
-            type: Number, 
-            default: 0 
-        },
         udar: { 
             type: Number, 
             default: 0 
         },
+        cash: { 
+            type: Number, 
+            default: 0 
+        },
+        retail: {
+            type: Number,
+            default: 0
+        },
+        RetaildiscountValue: {
+            type: Number,
+            default: 0
+        }
     }],
 }, { timestamps: true }); 
 
