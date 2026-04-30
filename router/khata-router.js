@@ -422,12 +422,15 @@ router.put('/update-transaction/:id', async (req, res) => {
         // A. Purana Asar Hatao (Revert Old Values)
         const oldAmountVal = Number(targetTrans.amount);
         const oldDiscountVal = Number(targetTrans.discount) || 0;
-        const netOldTotal = oldAmountVal - oldDiscountVal;
 
         if (targetTrans.type === 'Bill') {
+            const netOldTotal = oldAmountVal - oldDiscountVal;
+
             targetBill.totalAmount -= netOldTotal;     // Bill total kam karo
             if (user.grandTotal !== undefined) user.grandTotal -= netOldTotal; // User total kam karo
         } else if (targetTrans.type === 'Pay') {
+            const netOldTotal = oldAmountVal + oldDiscountVal;
+
             targetBill.totalAmount += netOldTotal;     // Payment thi, wapas add karo (udhar badha)
             if (user.grandTotal !== undefined) user.grandTotal += netOldTotal;
         };
@@ -442,12 +445,21 @@ router.put('/update-transaction/:id', async (req, res) => {
         // C. Naya Asar Dalo (Apply New Values)
         const newAmountVal = Number(amount);
         const newDiscountVal = Number(discount) || 0;
-        const netNewTotal = newAmountVal - newDiscountVal;
-
+        
         if (targetTrans.type === 'Bill') {
+<<<<<<< HEAD
             targetBill.totalAmount += netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
+=======
+            const netNewTotal = newAmountVal - newDiscountVal;
+
+            targetBill.totalAmount += netNewTotal;
+            if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
+        } else if (targetTrans.type === 'Pay') {
+            const netNewTotal = newAmountVal + newDiscountVal;
+
+>>>>>>> e0cd213f2133de395f2597ea62f24528d89ce2e1
             targetBill.totalAmount -= netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }
