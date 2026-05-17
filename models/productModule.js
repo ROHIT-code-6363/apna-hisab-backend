@@ -26,6 +26,10 @@ const ProductSchema = new mongoose.Schema({
             type: String,
             required: true 
         },
+        stock: {
+            type: Number,
+            default: 0
+        },
         udar: { 
             type: Number, 
             default: 0 

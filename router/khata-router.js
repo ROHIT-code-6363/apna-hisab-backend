@@ -90,18 +90,18 @@ router.delete('/KhataUserDelete/:id', async (req, res) => {
 
 {/* MULTI BILLS ISACTIVE */ }
 router.put('/User-Profile/:id', async (req, res) => {
-  const { id } = req.params;
-  const { isMultiBill, maxActiveBill } = req.body;
+    const { id } = req.params;
+    const { isMultiBill, maxActiveBill } = req.body;
 
-  // basic validation
-  if (typeof maxActiveBill !== 'undefined') {
-    if (!Number.isInteger(maxActiveBill) || maxActiveBill < 1 || maxActiveBill > 99) {
-      return res.status(400).json({ message: "maxActiveBill must be an integer between 1 and 99" });
+    // basic validation
+    if (typeof maxActiveBill !== 'undefined') {
+        if (!Number.isInteger(maxActiveBill) || maxActiveBill < 1 || maxActiveBill > 99) {
+            return res.status(400).json({ message: "maxActiveBill must be an integer between 1 and 99" });
+        }
     }
-  }
 
-  const updated = await KhataUser.findByIdAndUpdate(id, { isMultiBill, ...(maxActiveBill !== undefined && { maxActiveBill }) }, { new: true });
-  return res.json(updated);
+    const updated = await KhataUser.findByIdAndUpdate(id, { isMultiBill, ...(maxActiveBill !== undefined && { maxActiveBill }) }, { new: true });
+    return res.json(updated);
 });
 
 {/* USER PROFILE GET */ }
@@ -445,21 +445,20 @@ router.put('/update-transaction/:id', async (req, res) => {
         // C. Naya Asar Dalo (Apply New Values)
         const newAmountVal = Number(amount);
         const newDiscountVal = Number(discount) || 0;
-        
+
         if (targetTrans.type === 'Bill') {
-<<<<<<< HEAD
+
             targetBill.totalAmount += netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
-=======
+
             const netNewTotal = newAmountVal - newDiscountVal;
 
             targetBill.totalAmount += netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
             const netNewTotal = newAmountVal + newDiscountVal;
-
->>>>>>> e0cd213f2133de395f2597ea62f24528d89ce2e1
+            
             targetBill.totalAmount -= netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }

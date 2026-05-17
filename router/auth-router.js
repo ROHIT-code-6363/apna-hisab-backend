@@ -132,4 +132,37 @@ router.delete('/auth/DeleteProduct/:id', async (req, res) => {
   }
 });
 
+// Stock Update API
+router.put('/auth/stockUpdate', async (req, res) => {
+    try {
+        const { items } = req.body;
+
+        if (items && items.length > 0) {
+            for (let item of items) {
+                // Check karein ki productId aur variantIndex dono majood hain
+                if (item.productId && item.variantIndex !== undefined) {
+                    
+                    const product = await Products.findById(item.productId);
+
+                    if (product) {
+                        const qtyToMinus = Number(item.quantity || item.qty || 0);
+
+                        // Normal aasan tareeke se stock minus karein
+                        product.variants[item.variantIndex].stock = product.variants[item.variantIndex].stock - qtyToMinus;
+
+                        // Updated product ko save kar dein
+                        await product.save();
+                    }
+                }
+            }
+        }
+
+        res.status(200).json({ success: true, message: "Stock successfully updated!" });
+
+    } catch (error) {
+        console.error("Stock Update Error:", error);
+        res.status(500).json({ success: false, message: "Stock update fail ho gaya" });
+    }
+});
+
 module.exports = router;

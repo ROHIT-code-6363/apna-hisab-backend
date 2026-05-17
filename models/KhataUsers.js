@@ -7,7 +7,7 @@ const transactionSchema = new mongoose.Schema({
     billno: { type: String },
     date: { type: String, required: true },
     time: { type: String },
-    discount: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 }
 }, { _id: true });
 
 const KhataUsersSchema = new mongoose.Schema({

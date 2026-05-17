@@ -26,16 +26,18 @@ const BillSchema = new mongoose.Schema({
         size: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
+        priceType: {type: String, required: true},
         total: { type: Number, required: true },
         packOf: {type: Number},
         RetaildiscountValue: {type: Number}
     }],
     TaxableAmount: { type: Number, required: true },
     Discount: { type: Number, default: 0 },
+    RetailBoxDiscount: { type: Number, default: 0 },
+    ExtraDiscount: { type: Number, default: 0 },
     CGST: { type: Number, required: true },
     SGST: { type: Number, required: true },
     GrandTotal: { type: Number, required: true },
-    RetailBoxDiscount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 const Bill = mongoose.model("Bill", BillSchema);
