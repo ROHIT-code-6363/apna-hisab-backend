@@ -458,7 +458,6 @@ router.put('/update-transaction/:id', async (req, res) => {
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
             const netNewTotal = newAmountVal + newDiscountVal;
-            
             targetBill.totalAmount -= netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }
