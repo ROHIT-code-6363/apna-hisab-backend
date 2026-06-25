@@ -19,7 +19,13 @@ const ProductSchema = new mongoose.Schema({
     packOf: { 
         type: Number, 
         default: 1
-    }, 
+    },
+
+    SKU: {
+        type: String,
+        required: true,
+        unique: true
+    },
     
     variants: [{ 
         size: { 

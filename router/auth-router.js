@@ -4,9 +4,10 @@ const Products = require('../models/productModule');
 const upload = require("../middleware/multer");
 const cloudinary = require("../middleware/cloudinary");
 
+// --- ADD PRODUCT ---
 router.post("/auth/add-product", upload.single("image"), async (req, res) => {
   try {
-    const { name, category, variants, packOf } = req.body;
+    const { name, category, variants, packOf, SKU } = req.body;
     
     let imageUrl = req.body.image || ""; 
 
@@ -23,6 +24,7 @@ router.post("/auth/add-product", upload.single("image"), async (req, res) => {
       name: name,
       category: category,
       packOf: packOf || '1',
+      SKU: SKU,
       variants: typeof variants === 'string' ? JSON.parse(variants) : variants,
     });
 
@@ -40,6 +42,7 @@ router.post("/auth/add-product", upload.single("image"), async (req, res) => {
   }
 });
 
+// --- GET PRODUCTS ---
 router.get('/auth/getProducts', async (req, res) => {
   try {
     const product = await Products.find();
@@ -59,7 +62,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
   try {
     const { id } = req.params;
     
-    const { name, category, variants, packOf } = req.body;
+    const { name, category, variants, packOf, SKU } = req.body;
 
     let imageUrl = req.body.image || ""; 
 
@@ -85,6 +88,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
       name: name,
       category: category,
       packOf: packOf || '1',
+      SKU: SKU,
       variants: parsedVariants,
       image: imageUrl, 
     };
@@ -112,6 +116,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
   }
 });
 
+// --- DELETE PRODUCT ---
 router.delete('/auth/DeleteProduct/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -132,26 +137,38 @@ router.delete('/auth/DeleteProduct/:id', async (req, res) => {
   }
 });
 
-// Stock Update API
+// Stock Update API 
 router.put('/auth/stockUpdate', async (req, res) => {
     try {
         const { items } = req.body;
 
         if (items && items.length > 0) {
             for (let item of items) {
-                // Check karein ki productId aur variantIndex dono majood hain
-                if (item.productId && item.variantIndex !== undefined) {
+                
+                if (item.SKU) {
                     
-                    const product = await Products.findById(item.productId);
+                    const parts = item.SKU.split('_');
+                    const targetSKU = parts[0];
+                    const targetSize = parts[1];
 
-                    if (product) {
-                        const qtyToMinus = Number(item.quantity || item.qty || 0);
+                    if (targetSKU && targetSize) {
+                      
+                        const product = await Products.findOne({ SKU: targetSKU });
 
-                        // Normal aasan tareeke se stock minus karein
-                        product.variants[item.variantIndex].stock = product.variants[item.variantIndex].stock - qtyToMinus;
+                        if (product && product.variants) {
+                          
+                            const variant = product.variants.find(v => v.size === targetSize);
 
-                        // Updated product ko save kar dein
-                        await product.save();
+                            if (variant) {
+                                const qtyToMinus = Number(item.quantity || item.qty || 0);
+
+                                // Normal aasan tareeke se stock minus karein
+                                variant.stock = variant.stock - qtyToMinus;
+
+                                // Updated product ko save kar dein
+                                await product.save();
+                            }
+                        }
                     }
                 }
             }

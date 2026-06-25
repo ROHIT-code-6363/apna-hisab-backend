@@ -1,25 +1,32 @@
 const express = require('express');
 const router = express.Router();
 const Bills = require('../models/Bills');
+const Bills2 = require('../models/Bills2');
 const KhataUser = require('../models/KhataUsers');
 const Product = require('../models/productModule');
+const LabelFormat = require('../models/LabelSize');
 
 // Create a new bill
 router.post('/saveBill', async (req, res) => {
     try {
-        const { billNumber, status, items, totalAmount, cgst, sgst, discount, grandTotal, date, variantIndex, productId, khataId, khataName, khataPhone, khataCity, retailBoxDiscount, ExtraDiscount } = req.body;
+        const { billNumber, status, items, totalAmount, cgst, sgst, discount, grandTotal, date, khataId, khataName, khataPhone, khataCity, retailBoxDiscount, ExtraDiscount, billType } = req.body;
         console.log('Received bill data:', req.body);
         if (!billNumber || !items || items.length === 0) {
             return res.status(400).json({ message: "Incomplete bill data" });
         }
 
         // Check duplicate bill number
-        const existingBill = await Bills.findOne({ BillNo: billNumber });
+        let existingBill;
+        if (billType === 'bill2') {
+            existingBill = await Bills2.findOne({ BillNo: billNumber });
+        } else {
+            existingBill = await Bills.findOne({ BillNo: billNumber });
+        }
         if (existingBill) {
             return res.status(400).json({ message: "Bill number already exists", success: false });
         }
 
-        const newBill = new Bills({
+        const billDataToSave = {
             Date: date,
             BillNo: billNumber,
             status: status || 'Paid',
@@ -29,36 +36,50 @@ router.post('/saveBill', async (req, res) => {
             SGST: sgst,
             Discount: discount,
             GrandTotal: grandTotal,
-            variantIndex: variantIndex,
-            productId: productId,
             khataId: khataId || null,
             CustomerName: khataName || null,
             CustomerPhone: khataPhone || null,
             CustomerCity: khataCity || null,
             RetailBoxDiscount: retailBoxDiscount || 0,
-            ExtraDiscount: ExtraDiscount || 0
-        });
-        await newBill.save();
+            ExtraDiscount: ExtraDiscount || 0,
+            billType: billType || 'bill1'
+        };
+        if (billType === 'bill2') {
+            const newBill = new Bills2(billDataToSave);
+            await newBill.save();
+        } else {
+            const newBill = new Bills(billDataToSave);
+            await newBill.save();
+        }
         res.status(200).json({ message: "Bill saved successfully", success: true });
     } catch (error) {
         console.error("Save Error:", error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: "saveBill pre kuch gadbad he backend" });
     }
 });
 
 // Backend API: Aakhiri bill number bhejne ke liye
 router.get('/getLastBillNumber', async (req, res) => {
     try {
-        const lastBill = await Bills.findOne().sort({ createdAt: -1 });
+        const { type } = req.query;
+        let lastBill;
+
+        const query = { BillNo: { $exists: true, $ne: null, $ne: "" } };
+
+        if (type === 'bill2') {
+            lastBill = await Bills2.findOne(query).sort({ _id: -1 });
+        } else {
+            lastBill = await Bills.findOne(query).sort({ _id: -1 });
+        }
 
         let lastNumber = 0;
 
         if (lastBill && lastBill.BillNo) {
+            const extractedNumber = parseInt(lastBill.BillNo.replace(/[^0-9]/g, ''), 10);
 
-            lastNumber = parseInt(lastBill.BillNo.replace(/[^0-9]/g, ''), 10);
+            lastNumber = isNaN(extractedNumber) ? 0 : extractedNumber;
         }
 
-        // Frontend ko aakhiri number bhej do
         res.status(200).json({ success: true, lastNumber: lastNumber });
 
     } catch (error) {
@@ -70,8 +91,10 @@ router.get('/getLastBillNumber', async (req, res) => {
 // Get all bills
 router.get('/getBills', async (req, res) => {
     try {
-        const bills = await Bills.find();
-        res.status(200).json({ success: true, bills });
+        const bills1 = await Bills2.find();
+        const bills2 = await Bills.find();
+        const allBills = [...bills1, ...bills2];
+        res.status(200).json({ success: true, bills: allBills });
     } catch (error) {
         console.error("Fetch Bills Error:", error);
         res.status(500).json({ success: false, message: "Error fetching bills" });
@@ -86,17 +109,23 @@ router.post('/get-current-stocks', async (req, res) => {
 
         if (items && items.length > 0) {
             for (let item of items) {
-                const targetId = item.productId || item._id;
-                const targetVariantIndex = item.variantIndex !== undefined ? item.variantIndex : item.vIndex;
 
-                if (targetId && targetVariantIndex !== undefined) {
-                    const product = await Product.findById(targetId);
-                    
-                    // Ek unique key banayenge (jaise: "64abcd_0") aur usme stock save karenge
-                    const uniqueKey = `${targetId}_${targetVariantIndex}`;
-                    
-                    if (product && product.variants && product.variants[targetVariantIndex]) {
-                        stockData[uniqueKey] = product.variants[targetVariantIndex].stock;
+                const parts = item.SKU.split('_');
+                const targetSKU = parts[0];
+                const targetSize = parts[1];
+
+                if (targetSKU) {
+                    const product = await Product.findOne({ SKU: targetSKU });
+
+                    const uniqueKey = item.SKU;
+
+                    if (product && product.variants) {
+                        const variant = product.variants.find(v => v.size === targetSize);
+                        if (variant) {
+                            stockData[uniqueKey] = variant.stock;
+                        } else {
+                            stockData[uniqueKey] = 0; // Variant delete ho gaya ho toh 0 bhej do
+                        }
                     } else {
                         stockData[uniqueKey] = 0; // Agar item delete ho gaya ho toh 0 bhej do
                     }
@@ -113,7 +142,6 @@ router.post('/get-current-stocks', async (req, res) => {
 });
 
 // Update a bill
-// router.put('/updateBill/:id', async (req, res) => {
 //     try {
 //         const billId = req.params.id;
 //         const { items, totalAmount, cgst, sgst, discount, retailBoxDiscount, ExtraDiscount, grandTotal, variantIndex, productId } = req.body;
@@ -144,12 +172,18 @@ router.post('/get-current-stocks', async (req, res) => {
 // });
 
 // Update a bill
-router.put('/updateBill/:id', async (req, res) => {
+router.put('/updateBill', async (req, res) => {
     try {
-        const billId = req.params.id;
-        const newBillData = req.body; // NAYA: req.body ko newBillData me daal liya
+        const { billId, billType } = req.query;
+        const newBillData = req.body;
 
-        const oldBill = await Bills.findById(billId);
+        let oldBill;
+
+        if (billType === 'bill2') {
+            oldBill = await Bills2.findById(billId);
+        } else {
+            oldBill = await Bills.findById(billId);
+        }
 
         if (!oldBill) {
             return res.status(404).json({ success: false, message: "Bill not found" });
@@ -157,23 +191,25 @@ router.put('/updateBill/:id', async (req, res) => {
 
         // ==========================================
         // STEP A: Purane items ka stock WAPAS PLUS (+) kar do
-        // Note: Check karein ki DB schema me 'Items' (capital I) hai ya 'items'
         const oldItems = oldBill.Items || oldBill.items || [];
 
         if (oldItems.length > 0) {
             for (let oldItem of oldItems) {
-                const targetId = oldItem.productId || oldItem._id;
-                const targetVariantIndex = oldItem.variantIndex !== undefined ? oldItem.variantIndex : oldItem.vIndex;
+                const parts = oldItem.SKU.split('_');
+                const targetSKU = parts[0];
+                const targetSize = parts[1] || oldItem.size;
 
-                if (targetId && targetVariantIndex !== undefined) {
-                    const product = await Product.findById(targetId);
-                    if (product) {
-                        const qtyToRevert = Number(oldItem.quantity || oldItem.qty || 0);
-                        // Purana stock wapas dukan me rakh diya (PLUS)
-                        product.variants[targetVariantIndex].stock += qtyToRevert;
-                        await product.save();
+                const qtyToRevert = Number(oldItem.quantity || oldItem.qty || 0);
+
+                if (targetSKU) {
+                    const product = await Product.findOne({ SKU: targetSKU });
+                    if (product && product.variants) {
+                        const variant = product.variants.find(v => v.size === targetSize);
+                        if (variant) {
+                            variant.stock += qtyToRevert;
+                            await product.save();
+                        }
                     }
-
                 }
             }
         }
@@ -184,16 +220,20 @@ router.put('/updateBill/:id', async (req, res) => {
 
         if (newItems.length > 0) {
             for (let newItem of newItems) {
-                const targetId = newItem.productId || newItem._id;
-                const targetVariantIndex = newItem.variantIndex !== undefined ? newItem.variantIndex : newItem.vIndex;
+                const parts = newItem.SKU.split('_');
+                const targetSKU = parts[0];
+                const targetSize = parts[1] || newItem.size;
 
-                if (targetId && targetVariantIndex !== undefined) {
-                    const product = await Product.findById(targetId);
-                    if (product) {
-                        const qtyToMinus = Number(newItem.quantity || newItem.qty || 0);
-                        // Naya stock dukan se nikal liya (MINUS)
-                        product.variants[targetVariantIndex].stock -= qtyToMinus;
-                        await product.save();
+                const qtyToMinus = Number(newItem.quantity || newItem.qty || 0);
+
+                if (targetSKU) {
+                    const product = await Product.findOne({ SKU: targetSKU });
+                    if (product && product.variants) {
+                        const variant = product.variants.find(v => v.size === targetSize);
+                        if (variant) {
+                            variant.stock -= qtyToMinus;
+                            await product.save();
+                        }
                     }
                 }
             }
@@ -201,10 +241,7 @@ router.put('/updateBill/:id', async (req, res) => {
         // ==========================================
 
         // STEP C: Ab aakhir mein apne Bill ko naye data se update kar do
-        // Dhyan rakhein ki database keys (jaise Items, TaxableAmount) aapke schema se match karein
         oldBill.Items = newBillData.items;
-        oldBill.variantIndex = newBillData.variantIndex;
-        oldBill.productId = newBillData.productId;
         oldBill.TaxableAmount = newBillData.totalAmount;
         oldBill.CGST = newBillData.cgst;
         oldBill.SGST = newBillData.sgst;
@@ -212,10 +249,7 @@ router.put('/updateBill/:id', async (req, res) => {
         oldBill.RetailBoxDiscount = newBillData.retailBoxDiscount;
         oldBill.ExtraDiscount = newBillData.ExtraDiscount;
         oldBill.GrandTotal = newBillData.grandTotal;
-
-        // Agar frontend se variantIndex aur productId bill level par aa raha hai, tabhi ise use karein
-        if (newBillData.variantIndex !== undefined) oldBill.variantIndex = newBillData.variantIndex;
-        if (newBillData.productId) oldBill.productId = newBillData.productId;
+        oldBill.billType = billType;
 
         await oldBill.save();
 
@@ -294,6 +328,40 @@ router.delete('/deleteBill/:id', async (req, res) => {
     catch (error) {
         console.error("Delete Bill Error:", error);
         res.status(500).json({ success: false, message: "Error deleting bill" });
+    }
+});
+
+{/* LABEL SIZE ROUTES */ }
+router.put('/saveLabelSize', async (req, res) => {
+    try {
+        const updateData = req.body;
+        const updatedFormat = await LabelFormat.findOneAndUpdate(
+            {},             // Filter
+            updateData,     // Naya Data
+            {
+                new: true,    // Update ke baad naya data return kare
+                upsert: true  // MAGIC: Agar data bilkul nahi hai (first time), to naya create kar de
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Format updated successfully!",
+            data: updatedFormat
+        });
+    } catch (error) {
+        console.error("DB Error:", error);
+        res.status(500).json({ success: false, message: "Server me problem aayi" });
+    }
+});
+
+router.get('/getLabelSize', async (req, res) => {
+    try {
+        const format = await LabelFormat.findOne({});
+        res.status(200).json(format);
+    } catch (error) {
+        console.error("DB Error:", error);
+        res.status(500).json({ success: false, message: "Server me problem aayi" });
     }
 });
 

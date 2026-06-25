@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const BillSchema = new mongoose.Schema({
+const BillSchema2 = new mongoose.Schema({
     CustomerName: { type: String },
     CustomerPhone: { type: Number },
     CustomerCity: { type: String },
@@ -21,7 +21,7 @@ const BillSchema = new mongoose.Schema({
         default: null
     },
     Items: [{
-        SKU: { type: String, required: true },
+        SKU: { type: String, required: true},
         name: { type: String, required: true },
         size: { type: String, required: true },
         quantity: { type: Number, required: true },
@@ -40,5 +40,5 @@ const BillSchema = new mongoose.Schema({
     GrandTotal: { type: Number, required: true },
 }, { timestamps: true });
 
-const Bill = mongoose.model("Bill", BillSchema);
-module.exports = Bill;
+const Bill2 = mongoose.model("Bill2", BillSchema2);
+module.exports = Bill2;
