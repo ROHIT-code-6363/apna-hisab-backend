@@ -137,7 +137,6 @@ router.post('/add-transaction/:userid', async (req, res) => {
         const { billId } = req.query;
 
         const user = await KhataUser.findById(userid);
-
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -156,7 +155,6 @@ router.post('/add-transaction/:userid', async (req, res) => {
         }
 
         if (!targetBill) {
-
             if (user.bills.length === 0) {
                 user.bills.unshift({
                     note: 'General Bill',
@@ -186,22 +184,22 @@ router.post('/add-transaction/:userid', async (req, res) => {
         targetBill.transactions.push(newTransaction);
 
         if (type === 'Bill') {
-            targetBill.totalAmount += Number(amount);
+            targetBill.totalAmount += Number(amount) || 0;
 
-            if (user.grandTotal !== undefined) user.grandTotal += Number(amount);
+            if (user.grandTotal !== undefined) user.grandTotal += Number(amount) || 0;
 
             if (Number(discount) > 0) {
-                targetBill.totalAmount -= Number(discount);
-                if (user.grandTotal !== undefined) user.grandTotal -= Number(discount);
+                targetBill.totalAmount -= Number(discount) || 0;
+                if (user.grandTotal !== undefined) user.grandTotal -= Number(discount) || 0;
             }
         } else if (type === 'Pay') {
-            targetBill.totalAmount -= Number(amount);
+            targetBill.totalAmount -= Number(amount) || 0;
 
-            if (user.grandTotal !== undefined) user.grandTotal -= Number(amount);
+            if (user.grandTotal !== undefined) user.grandTotal -= Number(amount) || 0;
 
             if (Number(discount) > 0) {
-                targetBill.totalAmount -= Number(discount);
-                if (user.grandTotal !== undefined) user.grandTotal -= Number(discount)
+                targetBill.totalAmount -= Number(discount) || 0;
+                if (user.grandTotal !== undefined) user.grandTotal -= Number(discount) || 0;
             }
         }
 
@@ -363,7 +361,7 @@ router.delete('/delete-transaction/:id', async (req, res) => {
             return res.status(404).json({ message: "Transaction not found inside bill" });
         }
 
-        const netValue = Number(targetTrans.amount) - Number(targetTrans.discount) || 0;
+        const netValue = (Number(targetTrans.amount) || 0) + (Number(targetTrans.discount) || 0);
 
         if (targetTrans.type === 'Bill') {
 
@@ -392,14 +390,13 @@ router.delete('/delete-transaction/:id', async (req, res) => {
     }
 });
 
-{/* USER TRANSCATION UPDATE */ }
+{/* USER TRANSCATION UPDATE */}
 router.put('/update-transaction/:id', async (req, res) => {
     try {
         const transactionId = req.params.id;
         const { date, amount, discount, paymentMethod, billNo } = req.body;
 
         const user = await KhataUser.findOne({ "bills.transactions._id": transactionId });
-
         if (!user) {
             return res.status(404).json({ message: "Transaction not found" });
         }
@@ -420,7 +417,7 @@ router.put('/update-transaction/:id', async (req, res) => {
         }
 
         // A. Purana Asar Hatao (Revert Old Values)
-        const oldAmountVal = Number(targetTrans.amount);
+        const oldAmountVal = Number(targetTrans.amount) || 0;
         const oldDiscountVal = Number(targetTrans.discount) || 0;
 
         if (targetTrans.type === 'Bill') {
@@ -433,7 +430,7 @@ router.put('/update-transaction/:id', async (req, res) => {
 
             targetBill.totalAmount += netOldTotal;     // Payment thi, wapas add karo (udhar badha)
             if (user.grandTotal !== undefined) user.grandTotal += netOldTotal;
-        };
+        }
 
         // B. Transaction Data Update Karo
         targetTrans.date = date;
@@ -442,22 +439,21 @@ router.put('/update-transaction/:id', async (req, res) => {
         targetTrans.paymentMethod = paymentMethod;
         targetTrans.billno = billNo;
 
-        // C. Naya Asar Dalo (Apply New Values)
+        // C. Naya Asar Dalo (Apply New Values) - FIXED HERE
         const newAmountVal = Number(amount);
         const newDiscountVal = Number(discount) || 0;
 
         if (targetTrans.type === 'Bill') {
-
+            // Yahan netNewTotal define karna bhool gaye the
+            const netNewTotal = newAmountVal - newDiscountVal; 
+            
             targetBill.totalAmount += netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
-        } else if (targetTrans.type === 'Pay') {
 
-            const netNewTotal = newAmountVal - newDiscountVal;
-
-            targetBill.totalAmount += netNewTotal;
-            if (user.grandTotal !== undefined) user.grandTotal += netNewTotal;
         } else if (targetTrans.type === 'Pay') {
+            // Duplicate block hata diya aur yahan calculation theek kar di
             const netNewTotal = newAmountVal + newDiscountVal;
+            
             targetBill.totalAmount -= netNewTotal;
             if (user.grandTotal !== undefined) user.grandTotal -= netNewTotal;
         }
