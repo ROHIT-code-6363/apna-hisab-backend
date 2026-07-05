@@ -24,7 +24,7 @@ router.post("/auth/add-product", upload.single("image"), async (req, res) => {
       name: name,
       category: category,
       packOf: packOf || '1',
-      SKU: SKU,
+      SKU: SKU ? SKU.trim().toUpperCase() : "",
       variants: typeof variants === 'string' ? JSON.parse(variants) : variants,
     });
 
@@ -88,7 +88,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
       name: name,
       category: category,
       packOf: packOf || '1',
-      SKU: SKU,
+      SKU: SKU ? SKU.trim().toUpperCase() : "",
       variants: parsedVariants,
       image: imageUrl, 
     };
