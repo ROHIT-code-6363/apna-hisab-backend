@@ -9,7 +9,7 @@ const LabelFormat = require('../models/LabelSize');
 // Create a new bill
 router.post('/saveBill', async (req, res) => {
     try {
-        const { billNumber, status, items, totalAmount, cgst, sgst, discount, grandTotal, date, khataId, khataName, khataPhone, khataCity, retailBoxDiscount, ExtraDiscount, billType } = req.body;
+        const { billNumber, status, items, totalAmount, cgst, sgst, discount, grandTotal, date, khataId, khataName, khataPhone, khataCity, retailBoxDiscount, ExtraDiscount, billType, name, city, phone, paymentType, paidAMT, acAMT } = req.body;
         console.log('Received bill data:', req.body);
         if (!billNumber || !items || items.length === 0) {
             return res.status(400).json({ message: "Incomplete bill data" });
@@ -37,12 +37,15 @@ router.post('/saveBill', async (req, res) => {
             Discount: discount,
             GrandTotal: grandTotal,
             khataId: khataId || null,
-            CustomerName: khataName || null,
-            CustomerPhone: khataPhone || null,
-            CustomerCity: khataCity || null,
+            CustomerName: khataName || name || null,
+            CustomerPhone: khataPhone || phone || null,
+            CustomerCity: khataCity || city || null,
             RetailBoxDiscount: retailBoxDiscount || 0,
             ExtraDiscount: ExtraDiscount || 0,
-            billType: billType || 'bill1'
+            billType: billType || 'bill1',
+            paymentType: paymentType || 'Cash',
+            paidAMT: paidAMT || 0,
+            acAMT: acAMT || 0 
         };
         if (billType === 'bill2') {
             const newBill = new Bills2(billDataToSave);
@@ -250,6 +253,12 @@ router.put('/updateBill', async (req, res) => {
         oldBill.ExtraDiscount = newBillData.ExtraDiscount;
         oldBill.GrandTotal = newBillData.grandTotal;
         oldBill.billType = billType;
+        if (newBillData.paidAMT !== undefined) {
+             oldBill.paidAMT = newBillData.paidAMT;
+        }
+        if (newBillData.acAMT !== undefined) {
+             oldBill.acAMT = newBillData.acAMT;
+        }
 
         await oldBill.save();
 
@@ -266,7 +275,7 @@ router.put('/updateBill', async (req, res) => {
 router.put('/update-transaction-amount/:userid', async (req, res) => {
     try {
         const { userid } = req.params;
-        const { billno, date, oldAmount, newAmount } = req.body;
+        const { billno, date, oldAmount, newAmount, paidAMT = 0, acAMT = 0 } = req.body;
 
         // STEP 1: Pehle pata lagao ke KhataUser correct hai ya nahi
         const user = await KhataUser.findById(userid);
@@ -279,11 +288,13 @@ router.put('/update-transaction-amount/:userid', async (req, res) => {
             // Bill ke andar us transaction ko dhoondho
             targetTxn = bill.transactions.find(txn =>
                 txn.billno === billno &&
-                txn.date === date &&
-                txn.amount === Number(oldAmount)
+                txn.date === date
+                // txn.amount === Number(oldAmount - paidAMT - acAMT)
             );
             return targetTxn != null;
         });
+        console.log("Target Txn:", targetTxn);
+
 
         if (!targetBill || !targetTxn) {
             return res.status(404).json({ message: "BillNumber, Date ya Amount match nahi hua!" });
@@ -294,12 +305,14 @@ router.put('/update-transaction-amount/:userid', async (req, res) => {
             return res.status(400).json({ message: "Sirf 'Bill' type ke transaction update ho sakte hain!" });
         }
 
+        let newBalance = Number(newAmount);
+
         // Purana amount minus karo aur naya amount direct plus kar do
-        targetBill.totalAmount = (targetBill.totalAmount - Number(oldAmount)) + Number(newAmount);
-        user.grandTotal = (user.grandTotal - Number(oldAmount)) + Number(newAmount);
+        targetBill.totalAmount = (targetBill.totalAmount - Number(oldAmount)) + newBalance;
+        user.grandTotal = (user.grandTotal - Number(oldAmount)) + newBalance;
 
         // Transaction ke andar naya amount set kar do
-        targetTxn.amount = Number(newAmount);
+        targetTxn.amount = newBalance - paidAMT - acAMT;
 
         // Database mein Save kar do
         await user.save();

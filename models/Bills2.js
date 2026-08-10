@@ -7,6 +7,7 @@ const BillSchema2 = new mongoose.Schema({
     BillNo: { type: String, required: true, unique: true },
     Date: { type: String, required: true },
     billType: { type: String, },
+    paymentType: { type: String, },
     status: {
         type: String,
         enum: ['Paid', 'Udhar'],
@@ -38,6 +39,8 @@ const BillSchema2 = new mongoose.Schema({
     CGST: { type: Number, required: true },
     SGST: { type: Number, required: true },
     GrandTotal: { type: Number, required: true },
+    paidAMT: { type: Number, default: 0 },
+    acAMT: { type: Number, default: 0 }
 }, { timestamps: true });
 
 const Bill2 = mongoose.model("Bill2", BillSchema2);
