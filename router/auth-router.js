@@ -7,7 +7,7 @@ const cloudinary = require("../middleware/cloudinary");
 // --- ADD PRODUCT ---
 router.post("/auth/add-product", upload.single("image"), async (req, res) => {
   try {
-    const { name, category, variants, packOf, SKU } = req.body;
+    const { name, category, variants, packOf, SKU, multiplyByPack } = req.body;
     
     let imageUrl = req.body.image || ""; 
 
@@ -26,6 +26,7 @@ router.post("/auth/add-product", upload.single("image"), async (req, res) => {
       packOf: packOf || '1',
       SKU: SKU ? SKU.trim().toUpperCase() : "",
       variants: typeof variants === 'string' ? JSON.parse(variants) : variants,
+      multiplyByPack: multiplyByPack === 'true' || multiplyByPack === true ? true : false
     });
 
     await newProduct.save();
@@ -62,7 +63,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
   try {
     const { id } = req.params;
     
-    const { name, category, variants, packOf, SKU } = req.body;
+    const { name, category, variants, packOf, SKU, multiplyByPack } = req.body;
 
     let imageUrl = req.body.image || ""; 
 
@@ -91,6 +92,7 @@ router.put('/auth/update-product/:id', upload.single('image'), async (req, res) 
       SKU: SKU ? SKU.trim().toUpperCase() : "",
       variants: parsedVariants,
       image: imageUrl, 
+      multiplyByPack: multiplyByPack === 'true' || multiplyByPack === true ? true : false
     };
 
     // --- Database Update ---

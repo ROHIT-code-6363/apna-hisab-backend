@@ -26,6 +26,11 @@ const ProductSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+
+    multiplyByPack: {
+        type: Boolean,
+        default: false
+    },
     
     variants: [{ 
         size: { 
